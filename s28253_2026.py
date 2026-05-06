@@ -1,8 +1,10 @@
-# student number: s28253
+# Number: s28253
 # Date: 06/05/2026
-# Exercise: Random DNA sequence generator in FASTA format
-# Meryem Orhan
+# Description: Random DNA sequence generator in FASTA format
+# Author: Meryem Orhan
+
 import random
+
 
 def generate_sequence(length: int) -> str:
     """Returns a random DNA sequence of the specified length."""
@@ -10,8 +12,11 @@ def generate_sequence(length: int) -> str:
     sequence = ''.join(random.choice(nucleotides) for _ in range(length))
     return sequence
 
+
 def calculate_stats(sequence: str) -> dict:
-    """Returns a dictionary of sequence statistics."""
+    """Returns a dictionary of sequence statistics.
+    Keys: 'A', 'C', 'G', 'T' (float values, %),
+          'GC' (float value, %)."""
     length = len(sequence)
     stats = {
         'A': round(sequence.count('A') / length * 100, 2),
@@ -58,6 +63,17 @@ def format_fasta(seq_id: str, description: str, sequence: str, line_width: int =
     return header + "\n" + "\n".join(lines) + "\n"
 
 
+def find_motif(sequence: str, motif: str) -> list:
+    """Searches for all occurrences of a motif in the sequence.
+    Returns a list of positions (1-based, biological convention)."""
+    positions = []
+    motif = motif.upper()
+    for i in range(len(sequence) - len(motif) + 1):
+        if sequence[i:i + len(motif)] == motif:
+            positions.append(i + 1)  # 1-bazlı indeks
+    return positions
+
+
 def main():
     """Main function that orchestrates the program flow."""
     length = validate_positive_int("Enter sequence length: ")
@@ -90,6 +106,14 @@ def main():
     print(f"  G: {stats['G']:.2f}%")
     print(f"  T: {stats['T']:.2f}%")
     print(f"  GC-content: {stats['GC']:.2f}%")
+
+    motif = input("\nEnter a motif to search (or press Enter to skip): ")
+    if motif:
+        positions = find_motif(sequence, motif)
+        if positions:
+            print(f"Motif '{motif.upper()}' found at {len(positions)} position(s): {positions}")
+        else:
+            print(f"Motif '{motif.upper()}' not found in the sequence.")
 
 
 if __name__ == "__main__":
