@@ -4,6 +4,7 @@
 # Author: Meryem Orhan
 
 import random
+import csv
 
 
 def generate_sequence(length: int) -> str:
@@ -88,6 +89,26 @@ def transcribe(sequence: str) -> str:
     return sequence.replace('T', 'U')
 
 
+def sliding_window_gc(sequence: str, window_size: int) -> list:
+    """Calculates GC content in a sliding window along the sequence.
+    Returns a list of (start_position, gc_content) tuples.
+    Positions are 1-based (biological convention)."""
+    results = []
+    for i in range(len(sequence) - window_size + 1):
+        window = sequence[i:i + window_size]
+        gc = round((window.count('G') + window.count('C')) / window_size * 100, 2)
+        results.append((i + 1, gc))
+    return results
+
+
+def save_sliding_window_csv(results: list, filename: str) -> None:
+    """Saves sliding window GC content results to a CSV file."""
+    with open(filename, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['start_position', 'gc_content'])
+        writer.writerows(results)
+
+
 def main():
     """Main function that orchestrates the program flow."""
     length = validate_positive_int("Enter sequence length: ")
@@ -140,6 +161,13 @@ def main():
         f.write(format_fasta(f"{seq_id}_mRNA", "mRNA transcript", mrna))
 
     print(f"mRNA transcript added to {filename}")
+
+    window_size = validate_positive_int("\nEnter sliding window size: ", min_val=1, max_val=length)
+    sw_results = sliding_window_gc(sequence, window_size)
+    csv_filename = f"{seq_id}_gc_sliding.csv"
+    save_sliding_window_csv(sw_results, csv_filename)
+    print(f"Sliding window GC analysis saved to {csv_filename}")
+    print(f"  First 3 windows: {sw_results[:3]}")
 
 
 if __name__ == "__main__":
