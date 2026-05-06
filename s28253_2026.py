@@ -1,4 +1,4 @@
-# Number: s28253
+# Album number: s28253
 # Date: 06/05/2026
 # Description: Random DNA sequence generator in FASTA format
 # Author: Meryem Orhan
@@ -57,9 +57,7 @@ def format_fasta(seq_id: str, description: str, sequence: str, line_width: int =
         header = f">{seq_id} {description}"
     else:
         header = f">{seq_id}"
-
     lines = [sequence[i:i + line_width] for i in range(0, len(sequence), line_width)]
-
     return header + "\n" + "\n".join(lines) + "\n"
 
 
@@ -70,8 +68,19 @@ def find_motif(sequence: str, motif: str) -> list:
     motif = motif.upper()
     for i in range(len(sequence) - len(motif) + 1):
         if sequence[i:i + len(motif)] == motif:
-            positions.append(i + 1)  # 1-bazlı indeks
+            positions.append(i + 1)
     return positions
+
+
+def get_complement(sequence: str) -> str:
+    """Returns the complementary DNA strand (A<->T, C<->G)."""
+    complement_map = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C'}
+    return ''.join(complement_map[nuc] for nuc in sequence)
+
+
+def get_reverse_complement(sequence: str) -> str:
+    """Returns the reverse complementary DNA strand."""
+    return get_complement(sequence)[::-1]
 
 
 def main():
@@ -87,9 +96,7 @@ def main():
     name = input("Enter your name: ")
 
     sequence = generate_sequence(length)
-
     sequence_with_name = insert_name(sequence, name)
-
     stats = calculate_stats(sequence)
 
     fasta_content = format_fasta(seq_id, description, sequence_with_name)
@@ -99,7 +106,6 @@ def main():
         f.write(fasta_content)
 
     print(f"\nSequence saved to file: {filename}")
-
     print(f"Sequence statistics (n={length}):")
     print(f"  A: {stats['A']:.2f}%")
     print(f"  C: {stats['C']:.2f}%")
@@ -114,6 +120,15 @@ def main():
             print(f"Motif '{motif.upper()}' found at {len(positions)} position(s): {positions}")
         else:
             print(f"Motif '{motif.upper()}' not found in the sequence.")
+
+    comp = get_complement(sequence)
+    rev_comp = get_reverse_complement(sequence)
+
+    with open(filename, 'a') as f:
+        f.write(format_fasta(f"{seq_id}_complement", "Complementary strand", comp))
+        f.write(format_fasta(f"{seq_id}_revcomp", "Reverse complementary strand", rev_comp))
+
+    print(f"\nComplement and reverse complement added to {filename}")
 
 
 if __name__ == "__main__":
