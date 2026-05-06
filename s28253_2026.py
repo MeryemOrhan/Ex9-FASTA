@@ -83,6 +83,11 @@ def get_reverse_complement(sequence: str) -> str:
     return get_complement(sequence)[::-1]
 
 
+def transcribe(sequence: str) -> str:
+    """Transcribes a DNA sequence to mRNA (T -> U replacement)."""
+    return sequence.replace('T', 'U')
+
+
 def main():
     """Main function that orchestrates the program flow."""
     length = validate_positive_int("Enter sequence length: ")
@@ -129,6 +134,12 @@ def main():
         f.write(format_fasta(f"{seq_id}_revcomp", "Reverse complementary strand", rev_comp))
 
     print(f"\nComplement and reverse complement added to {filename}")
+
+    mrna = transcribe(sequence)
+    with open(filename, 'a') as f:
+        f.write(format_fasta(f"{seq_id}_mRNA", "mRNA transcript", mrna))
+
+    print(f"mRNA transcript added to {filename}")
 
 
 if __name__ == "__main__":
