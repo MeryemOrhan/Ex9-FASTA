@@ -17,7 +17,7 @@ def generate_sequence(length: int) -> str:
 def calculate_stats(sequence: str) -> dict:
     """Returns a dictionary of sequence statistics.
     Keys: 'A', 'C', 'G', 'T' (float values, %),
-          'GC' (float value, %)."""
+          'GC' (float value, %), 'gc_ratio_A' (float value, %)."""
     length = len(sequence)
     stats = {
         'A': round(sequence.count('A') / length * 100, 2),
@@ -26,6 +26,7 @@ def calculate_stats(sequence: str) -> dict:
         'T': round(sequence.count('T') / length * 100, 2),
     }
     stats['GC'] = round(stats['G'] + stats['C'], 2)
+    stats['gc_ratio_A'] = stats['GC']
     return stats
 
 
@@ -89,6 +90,37 @@ def transcribe(sequence: str) -> str:
     return sequence.replace('T', 'U')
 
 
+def translate(sequence: str) -> str:
+    """Translates a DNA sequence into an amino acid sequence using the standard codon table.
+    Stops translation at the first stop codon (*)."""
+    codon_table = {
+        'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
+        'CTT': 'L', 'CTC': 'L', 'CTA': 'L', 'CTG': 'L',
+        'ATT': 'I', 'ATC': 'I', 'ATA': 'I', 'ATG': 'M',
+        'GTT': 'V', 'GTC': 'V', 'GTA': 'V', 'GTG': 'V',
+        'TCT': 'S', 'TCC': 'S', 'TCA': 'S', 'TCG': 'S',
+        'CCT': 'P', 'CCC': 'P', 'CCA': 'P', 'CCG': 'P',
+        'ACT': 'T', 'ACC': 'T', 'ACA': 'T','ACG': 'T',
+        'GCT': 'A', 'GCC': 'A', 'GCA': 'A', 'GCG': 'A',
+        'TAT': 'Y', 'TAC': 'Y', 'TAA': '*', 'TAG': '*',
+        'CAT': 'H', 'CAC': 'H', 'CAA': 'Q', 'CAG': 'Q',
+        'AAT': 'N', 'AAC': 'N', 'AAA': 'K', 'AAG': 'K',
+        'GAT': 'D', 'GAC': 'D', 'GAA': 'E', 'GAG': 'E',
+        'TGT': 'C', 'TGC': 'C', 'TGA': '*', 'TGG': 'W',
+        'CGT': 'R', 'CGC': 'R', 'CGA': 'R', 'CGG': 'R',
+        'AGT': 'S', 'AGC': 'S', 'AGA': 'R', 'AGG': 'R',
+        'GGT': 'G', 'GGC': 'G', 'GGA': 'G', 'GGG': 'G',
+    }
+    protein = []
+    for i in range(0, len(sequence) - 2, 3):
+        codon = sequence[i:i + 3].upper()
+        aa = codon_table.get(codon, '?')
+        if aa == '*':
+            break
+        protein.append(aa)
+    return ''.join(protein)
+
+
 def sliding_window_gc(sequence: str, window_size: int) -> list:
     """Calculates GC content in a sliding window along the sequence.
     Returns a list of (start_position, gc_content) tuples.
@@ -125,11 +157,17 @@ def main():
     sequence_with_name = insert_name(sequence, name)
     stats = calculate_stats(sequence)
 
-    fasta_content = format_fasta(seq_id, description, sequence_with_name)
+    protein = translate(sequence)
+
     filename = f"{seq_id}.fasta"
 
     with open(filename, 'w') as f:
-        f.write(fasta_content)
+        f.write(format_fasta(seq_id, description, sequence_with_name))
+        f.write(format_fasta(f"{seq_id}_complement", "Complementary strand", get_complement(sequence)))
+        f.write(format_fasta(f"{seq_id}_revcomp", "Reverse complementary strand", get_reverse_complement(sequence)))
+        f.write(format_fasta(f"{seq_id}_mRNA", "mRNA transcript", transcribe(sequence)))
+        f.write(format_fasta(f"{seq_id}_protein", "Translated protein sequence", protein))
+        f.write("# EOF_1\n")
 
     print(f"\nSequence saved to file: {filename}")
     print(f"Sequence statistics (n={length}):")
@@ -138,6 +176,7 @@ def main():
     print(f"  G: {stats['G']:.2f}%")
     print(f"  T: {stats['T']:.2f}%")
     print(f"  GC-content: {stats['GC']:.2f}%")
+    print(f"\nProtein sequence (length={len(protein)}): {protein[:60]}{'...' if len(protein) > 60 else ''}")
 
     motif = input("\nEnter a motif to search (or press Enter to skip): ")
     if motif:
@@ -147,27 +186,11 @@ def main():
         else:
             print(f"Motif '{motif.upper()}' not found in the sequence.")
 
-    comp = get_complement(sequence)
-    rev_comp = get_reverse_complement(sequence)
-
-    with open(filename, 'a') as f:
-        f.write(format_fasta(f"{seq_id}_complement", "Complementary strand", comp))
-        f.write(format_fasta(f"{seq_id}_revcomp", "Reverse complementary strand", rev_comp))
-
-    print(f"\nComplement and reverse complement added to {filename}")
-
-    mrna = transcribe(sequence)
-    with open(filename, 'a') as f:
-        f.write(format_fasta(f"{seq_id}_mRNA", "mRNA transcript", mrna))
-
-    print(f"mRNA transcript added to {filename}")
-
     window_size = validate_positive_int("\nEnter sliding window size: ", min_val=1, max_val=length)
     sw_results = sliding_window_gc(sequence, window_size)
     csv_filename = f"{seq_id}_gc_sliding.csv"
     save_sliding_window_csv(sw_results, csv_filename)
     print(f"Sliding window GC analysis saved to {csv_filename}")
-    print(f"  First 3 windows: {sw_results[:3]}")
 
 
 if __name__ == "__main__":
