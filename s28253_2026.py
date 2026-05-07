@@ -92,7 +92,8 @@ def transcribe(sequence: str) -> str:
 
 def translate(sequence: str) -> str:
     """Translates a DNA sequence into an amino acid sequence using the standard codon table.
-    Stops translation at the first stop codon (*)."""
+    Stops translation at the first stop codon (*).
+    Reference: https://www.bioinformatics.org/JaMBW/2/3/TranslationTables.html"""
     codon_table = {
         'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
         'CTT': 'L', 'CTC': 'L', 'CTA': 'L', 'CTG': 'L',
